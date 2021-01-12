@@ -65,38 +65,29 @@ normal_scan_paths = [
     for x in os.listdir("/home/emo4002/colossus_shared3/MSpredict/data/voxelwise_MSconnect_QSM/normal_gr3")
 ]
 
-abnormal_scan_paths = [
-    os.path.join(os.getcwd(), "/home/emo4002/colossus_shared3/MSpredict/data/voxelwise_MSconnect_QSM/disabled_gr3", x)
-    for x in os.listdir("/home/emo4002/colossus_shared3/MSpredict/data/voxelwise_MSconnect_QSM/disabled_gr3")
-]
 
 print("MRI scans of individuals with normal EDSS: " + str(len(normal_scan_paths)))
-print("MRI scans of individuals with disabled EDSS:  " + str(len(abnormal_scan_paths)))
-
-
 
 # Read and process the scans.
 # Each scan is resized across height, width, and depth and rescaled.
-abnormal_scans = np.array([process_scan(path) for path in abnormal_scan_paths])
 normal_scans = np.array([process_scan(path) for path in normal_scan_paths])
 
+normal_labels = np.array([0 for _ in range(len(normal_scans))]) #continuous values
 
-abnormal_labels = np.array([1 for _ in range(len(abnormal_scans))])
-normal_labels = np.array([0 for _ in range(len(normal_scans))])
+# Split data in the ratio 70-15-15 for training, validation, and test
+x_train = normal_scans[:15]
+y_train = normal_labels[:15]
+x_train = normal_scans[15:30]
+y_train = normal_labels[15:30]
+x_test = normal_scans[30:100]
+y_test = normal_labels[30:100]
 
-
-# Split data in the ratio 70-30 for training and validation.
-x_train = np.concatenate((abnormal_scans[:26], normal_scans[:97]), axis=0)
-y_train = np.concatenate((abnormal_labels[:26], normal_labels[:97]), axis=0)
-x_val = np.concatenate((abnormal_scans[18:], normal_scans[97:]), axis=0)
-y_val = np.concatenate((abnormal_labels[18:], normal_labels[97:]), axis=0)
 print(
-    "Number of samples in train and validation are %d and %d."
-    % (x_train.shape[0], x_val.shape[0])
+    "Number of samples in train, validation, and tesst are %d, %d, and %d."
+    % (x_train.shape[0], x_val.shape[0], x_test.shape[0])
 )
 
 import random
-
 from scipy import ndimage
 
 
@@ -181,7 +172,7 @@ def get_model(width=64, height=64, depth=64):
     x = layers.Dense(units=512, activation="relu")(x)
     x = layers.Dropout(0.3)(x)
 
-    outputs = layers.Dense(units=1, activation="sigmoid")(x)
+    outputs = layers.Dense(units=1, activation="linear")(x) #change activation from sigmoid to linear
 
     # Define the model.
     model = keras.Model(inputs, outputs, name="3dcnn")
