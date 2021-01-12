@@ -13,7 +13,7 @@ import nibabel as nib
 
 from scipy import ndimage
 
-
+results_path="/path/to/results/"
 def read_nifti_file(filepath):
     """Read and load volume"""
     # Read file
@@ -61,10 +61,9 @@ def process_scan(path):
     return volume
 
 normal_scan_paths = [
-    os.path.join(os.getcwd(), "/home/emo4002/colossus_shared3/MSpredict/data/voxelwise_MSconnect_QSM/normal_gr3", x)
-    for x in os.listdir("/home/emo4002/colossus_shared3/MSpredict/data/voxelwise_MSconnect_QSM/normal_gr3")
+    os.path.join(os.getcwd(), "/path/to/scans/", x)
+    for x in os.listdir("/path/to/scans/")
 ]
-
 
 print("MRI scans of individuals with normal EDSS: " + str(len(normal_scan_paths)))
 
@@ -145,8 +144,6 @@ validation_dataset = (
 
 
 
-
-
 def get_model(width=64, height=64, depth=64):
     """Build a 3D convolutional neural network model."""
 
@@ -214,10 +211,10 @@ model.fit(
 )
 
 model_json=model.to_json()
-with open("/home/emo4002/colossus_shared3/MSpredict/code/results/model.json", "w") as json_file:
+with open(str(results_path + "/model.json"), "w") as json_file:
     json_file.write(model_json)
 
-model.save_weights("/home/emo4002/colossus_shared3/MSpredict/code/results/model.h5")
+model.save_weights(str(results_path + "model.h5"))
 print("saved model to disk")
 
 fig, ax = plt.subplots(1, 2, figsize=(20, 3))
@@ -231,8 +228,7 @@ for i, metric in enumerate(["acc", "loss"]):
     ax[i].set_ylabel(metric)
     ax[i].legend(["train", "val"])
 
-plt.savefig('/home/emo4002/colossus_shared3/MSpredict/code/results/acc_loss_QSM_MSConnect_2mm.png')
-
+plt.savefig(str(results_path + "/acc_loss_training.png"))
 
 # Load best weights.
 model.load_weights("3d_image_classification.h5")
@@ -245,5 +241,11 @@ for score, name in zip(scores, class_names):
         "This model is %.2f percent confident that MRI scan is %s"
         % ((100 * score), name)
     )
+   
+# Evaluate model on test data.
+print("Evaluate on test data")
+results = model.evaluate(x_test, y_test)
+print("test loss, test accuracy:", results)
+
 
 
