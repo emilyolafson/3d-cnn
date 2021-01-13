@@ -79,10 +79,8 @@ print("MRI scans of individuals with disabled EDSS:  " + str(len(disabled_scan_p
 disabled_scans = np.array([process_scan(path) for path in disabled_scan_paths])
 not_disabled_scans = np.array([process_scan(path) for path in not_disabled_scan_paths])
 
-
 disabled_labels = np.array([1 for _ in range(len(disabled_scans))])
 not_disabled_labels = np.array([0 for _ in range(len(not_disabled_scans))])
-
 
 # Split data in the ratio 70-15-15 for training, validation, and test respectively
 
@@ -95,6 +93,31 @@ y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axi
 x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
 y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
 
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xtest_data.pickle", "wb")
+pickle.dump(x_test, pickle_out)
+pickle_out.close()
+
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/ytest_data.pickle", "wb")
+pickle.dump(y_test, pickle_out)
+pickle_out.close()
+
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xtrain_data.pickle", "wb")
+pickle.dump(x_train, pickle_out)
+pickle_out.close()
+
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/ytrain_data.pickle", "wb")
+pickle.dump(y_train, pickle_out)
+pickle_out.close()
+
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xval_data.pickle", "wb")
+pickle.dump(x_val, pickle_out)
+pickle_out.close()
+
+pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/yval_data.pickle", "wb")
+pickle.dump(y_val, pickle_out)
+pickle_out.close()
+
+print("Saved data to pkl format")
 
 print(
     "Number of samples in train, validation, and test are %d, %d, and %d."
@@ -102,9 +125,7 @@ print(
 )
 
 import random
-
 from scipy import ndimage
-
 
 @tf.function
 def rotate(volume):
@@ -159,9 +180,6 @@ validation_dataset = (
 )
 
 
-
-
-
 def get_model(width=64, height=64, depth=64):
     """Build a 3D convolutional neural network model."""
 
@@ -199,16 +217,16 @@ model = get_model(width=64, height=64, depth=64)
 model.summary()
 
 
-
 # Compile model.
 initial_learning_rate = 0.0001
 lr_schedule = keras.optimizers.schedules.ExponentialDecay(
     initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
 )
+
 model.compile(
     loss="binary_crossentropy",
     optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-    metrics=["acc"],
+    metrics=[tf.keras.metrics.AUC()]
 )
 
 # Define callbacks.
