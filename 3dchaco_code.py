@@ -13,6 +13,8 @@ import nibabel as nib
 from scipy import ndimage
 import random
 
+print("Loading pkled data")
+
 cwd = os.getcwd()
 data_dir = str(cwd)+"/data"
 pickle_in = open(data_dir + "/xtest_data.pkl", "r+b")
@@ -24,7 +26,7 @@ y_test = pickle.load(pickle_in)
 pickle_in = open(data_dir + "/xtrain_data.pkl", "r+b")
 x_train = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/ytrain_dat.pkl", "r+b")
+pickle_in = open(data_dir + "/ytrain_data.pkl", "r+b")
 y_train = pickle.load(pickle_in)
 
 pickle_in = open(data_dir + "/xval_data.pkl", "r+b")

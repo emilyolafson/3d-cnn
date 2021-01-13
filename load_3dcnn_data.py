@@ -93,7 +93,7 @@ pickle_out= open(data_dir + "/xtest_data.pkl", "wb")
 pickle.dump(x_test, pickle_out)
 pickle_out.close()
 
-pickle_out = open(data_dir + "/ytest_data.pkl", "wb)
+pickle_out = open(data_dir + "/ytest_data.pkl", "wb")
 pickle.dump(y_test, pickle_out)
 pickle_out.close()
 
