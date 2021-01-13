@@ -129,7 +129,7 @@ model.summary()
 
 METRICS = [
       keras.metrics.TruePositives(name='tp'),
-      keras.metrics.binary_crossentropy(name='binary_crossentropy')
+      keras.metrics.binary_crossentropy(name='binary_crossentropy'),
       keras.metrics.FalsePositives(name='fp'),
       keras.metrics.TrueNegatives(name='tn'),
       keras.metrics.FalseNegatives(name='fn'), 
