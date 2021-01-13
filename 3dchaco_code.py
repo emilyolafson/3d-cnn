@@ -13,6 +13,8 @@ import nibabel as nib
 
 from scipy import ndimage
 
+cwd = os.getcwd()
+data_dir = str(cwd)+"/data"
 
 def read_nifti_file(filepath):
     """Read and load volume"""
@@ -61,13 +63,11 @@ def process_scan(path):
     return volume
 
 not_disabled_scan_paths = [
-    os.path.join(os.getcwd(), "/home/emo4002/colossus_shared3/MSpredict/data/not_disabled", x)
-    for x in os.listdir("/home/emo4002/colossus_shared3/MSpredict/data/not_disabled")
+    for x in os.listdir(data_dir + "/not_disabled")
 ]
 
 disabled_scan_paths = [
-    os.path.join(os.getcwd(), "/home/emo4002/colossus_shared3/MSpredict/data/disabled", x)
-    for x in os.listdir("/home/emo4002/colossus_shared3/MSpredict/data/disabled")
+    for x in os.listdir(data_dir + "/disabled")
 ]
 
 print("MRI scans of individuals with not_disabled EDSS: " + str(len(not_disabled_scan_paths)))
@@ -93,27 +93,27 @@ y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axi
 x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
 y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xtest_data.pickle", "wb")
+pickle_out= open(data_dir + "/xtest_data.pickle", "wb")
 pickle.dump(x_test, pickle_out)
 pickle_out.close()
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/ytest_data.pickle", "wb")
+pickle_out= open(data_dir + "ytest_data.pickle", "wb")
 pickle.dump(y_test, pickle_out)
 pickle_out.close()
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xtrain_data.pickle", "wb")
+pickle_out= open(data_dir + "/xtrain_data.pickle", "wb")
 pickle.dump(x_train, pickle_out)
 pickle_out.close()
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/ytrain_data.pickle", "wb")
+pickle_out= open(data_dir + "/ytrain_data.pickle", "wb")
 pickle.dump(y_train, pickle_out)
 pickle_out.close()
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/xval_data.pickle", "wb")
+pickle_out= open(data_dir + "/xval_data.pickle", "wb")
 pickle.dump(x_val, pickle_out)
 pickle_out.close()
 
-pickle_out= open ("/home/emo4002/colossus_shared3/MSpredict/data/yval_data.pickle", "wb")
+pickle_out= open(data_dir + "/yval_data.pickle", "wb")
 pickle.dump(y_val, pickle_out)
 pickle_out.close()
 
@@ -246,11 +246,12 @@ model.fit(
     callbacks=[checkpoint_cb, early_stopping_cb],
 )
 
+results_dir = str(cwd) + "/results"
 model_json=model.to_json()
-with open("/home/emo4002/colossus_shared3/MSpredict/code/results/model.json", "w") as json_file:
+with open(results_dir + "model.json", "w") as json_file:
     json_file.write(model_json)
 
-model.save_weights("/home/emo4002/colossus_shared3/MSpredict/code/results/model.h5")
+model.save_weights(results_dir + "/model.h5")
 print("saved model to disk")
 
 fig, ax = plt.subplots(1, 2, figsize=(20, 3))
@@ -264,8 +265,7 @@ for i, metric in enumerate(["acc", "loss"]):
     ax[i].set_ylabel(metric)
     ax[i].legend(["train", "val"])
 
-plt.savefig('/home/emo4002/colossus_shared3/MSpredict/code/results/acc_loss_QSM_MSConnect_2mm.png')
-
+plt.savefig(results_dir + "/acc_loss_QSM_MSConnect_2mm.png")
 
 # Load best weights.
 model.load_weights("3d_image_classification.h5")
@@ -279,9 +279,3 @@ for score, name in zip(scores, class_names):
         % ((100 * score), name)
     )
 
-
-# Evaluate model.
-print("Evaluate on test data")
-results=model.evaluate(x_test, y_test)
-
-print("test loss, test acc:", results)
