@@ -13,15 +13,30 @@ import nibabel as nib
 from scipy import ndimage
 import random
 
-
 cwd = os.getcwd()
 data_dir = str(cwd)+"/data"
+pickle_in = open(data_dir + "/xtest_data.pkl", "r+b")
+x_test = pickle.load(pickle_in)
+
+pickle_in = open(data_dir + "/ytest_data.pkl", "r+b")
+y_test = pickle.load(pickle_in)
+
+pickle_in = open(data_dir + "/xtrain_data.pkl", "r+b")
+x_train = pickle.load(pickle_in)
+
+pickle_in = open(data_dir + "/ytrain_dat.pkl", "r+b")
+y_train = pickle.load(pickle_in)
+
+pickle_in = open(data_dir + "/xval_data.pkl", "r+b")
+x_val = pickle.load(pickle_in)
+
+pickle_in = open(data_dir + "/yval_data.pkl", "r+b")
+y_val = pickle.load(pickle_in)
 
 print(
     "Number of samples in train, validation, and test are %d, %d, and %d."
     % (x_train.shape[0], x_val.shape[0], x_test.shape[0])
 )
-
 
 @tf.function
 def rotate(volume):
@@ -112,6 +127,17 @@ def get_model(width=64, height=64, depth=64):
 model = get_model(width=64, height=64, depth=64)
 model.summary()
 
+METRICS = [
+      keras.metrics.TruePositives(name='tp'),
+      keras.metrics.binary_crossentropy(name='binary_crossentropy')
+      keras.metrics.FalsePositives(name='fp'),
+      keras.metrics.TrueNegatives(name='tn'),
+      keras.metrics.FalseNegatives(name='fn'), 
+      keras.metrics.BinaryAccuracy(name='accuracy'),
+      keras.metrics.Precision(name='precision'),
+      keras.metrics.Recall(name='recall'),
+      keras.metrics.AUC(name='auc'),
+]
 
 # Compile model.
 initial_learning_rate = 0.0001
@@ -122,14 +148,13 @@ lr_schedule = keras.optimizers.schedules.ExponentialDecay(
 model.compile(
     loss="binary_crossentropy",
     optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-    metrics=[tf.keras.metrics.AUC()]
+    metrics=[METRICS]
 )
 
 # Define callbacks.
-checkpoint_cb = keras.callbacks.ModelCheckpoint(
-    "3d_image_classification.h5", save_best_only=True
-)
-early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_acc", patience=15)
+checkpoint_cb = keras.callbacks.ModelCheckpoint("3d_image_classification.h5", save_best_only=True)
+
+early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_acc", patience=5)
 
 # Train the model, doing validation at the end of each epoch
 epochs = 100

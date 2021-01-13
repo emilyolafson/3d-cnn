@@ -1,16 +1,9 @@
 
 import os
-import zipfile
 import numpy as np
-import tensorflow as tf
 import pickle
-from tensorflow import keras
-from tensorflow.keras import layers
-import matplotlib.pyplot as plt
-from keras.models import model_from_json
 import nibabel as nib
 from scipy import ndimage
-
 
 cwd = os.getcwd()
 data_dir = str(cwd)+"/data"
@@ -80,6 +73,8 @@ print("MRI scans of individuals with disabled EDSS:  " + str(len(disabled_scan_p
 disabled_scans = np.array([process_scan(path) for path in disabled_scan_paths])
 not_disabled_scans = np.array([process_scan(path) for path in not_disabled_scan_paths])
 
+print("Finished loading & processing scan volumes")
+
 disabled_labels = np.array([1 for _ in range(len(disabled_scans))])
 not_disabled_labels = np.array([0 for _ in range(len(not_disabled_scans))])
 
@@ -94,27 +89,27 @@ y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axi
 x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
 y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
 
-pickle_out= open(data_dir + "/xtest_data.pickle", "wb")
+pickle_out= open(data_dir + "/xtest_data.pkl", "wb")
 pickle.dump(x_test, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "ytest_data.pickle", "wb")
+pickle_out = open(data_dir + "/ytest_data.pkl", "wb)
 pickle.dump(y_test, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/xtrain_data.pickle", "wb")
+pickle_out= open(data_dir + "/xtrain_data.pkl", "wb")
 pickle.dump(x_train, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/ytrain_data.pickle", "wb")
+pickle_out= open(data_dir + "/ytrain_data.pkl", "wb")
 pickle.dump(y_train, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/xval_data.pickle", "wb")
+pickle_out= open(data_dir + "/xval_data.pkl", "wb")
 pickle.dump(x_val, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/yval_data.pickle", "wb")
+pickle_out= open(data_dir + "/yval_data.pkl", "wb")
 pickle.dump(y_val, pickle_out)
 pickle_out.close()
 
