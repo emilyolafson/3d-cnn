@@ -89,6 +89,12 @@ y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axi
 x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
 y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
 
+all_x=np.concatenate((disabled_scans, not_disabled_scans), axis=0)
+all_y=np.concatenate((disabled_labels, not_disabled_labels), axis=0)
+
+
+
+
 pickle_out= open(data_dir + "/xtest_data.pkl", "wb")
 pickle.dump(x_test, pickle_out)
 pickle_out.close()
@@ -111,6 +117,14 @@ pickle_out.close()
 
 pickle_out= open(data_dir + "/yval_data.pkl", "wb")
 pickle.dump(y_val, pickle_out)
+pickle_out.close()
+
+pickle_out= open(data_dir + "/all_xdata.pkl", "wb")
+pickle.dump(all_x, pickle_out)
+pickle_out.close()
+
+pickle_out= open(data_dir + "/all_ydata.pkl", "wb")
+pickle.dump(all_y, pickle_out)
 pickle_out.close()
 
 print("Saved data to pkl format")

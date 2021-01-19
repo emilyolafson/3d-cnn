@@ -10,6 +10,7 @@ from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 from keras.models import model_from_json
 import nibabel as nib
+from sklearn.model_selection import StratifiedKFold
 from scipy import ndimage
 import random
 
@@ -17,28 +18,12 @@ print("Loading pkled data")
 
 cwd = os.getcwd()
 data_dir = str(cwd)+"/data"
-pickle_in = open(data_dir + "/xtest_data.pkl", "r+b")
-x_test = pickle.load(pickle_in)
+pickle_in = open(data_dir + "/all_xdata.pkl", "r+b")
+x = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/ytest_data.pkl", "r+b")
-y_test = pickle.load(pickle_in)
+pickle_in = open(data_dir + "/all_ydata.pkl", "r+b")
+y = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/xtrain_data.pkl", "r+b")
-x_train = pickle.load(pickle_in)
-
-pickle_in = open(data_dir + "/ytrain_data.pkl", "r+b")
-y_train = pickle.load(pickle_in)
-
-pickle_in = open(data_dir + "/xval_data.pkl", "r+b")
-x_val = pickle.load(pickle_in)
-
-pickle_in = open(data_dir + "/yval_data.pkl", "r+b")
-y_val = pickle.load(pickle_in)
-
-print(
-    "Number of samples in train, validation, and test are %d, %d, and %d."
-    % (x_train.shape[0], x_val.shape[0], x_test.shape[0])
-)
 
 @tf.function
 def rotate(volume):
@@ -71,6 +56,16 @@ def validation_preprocessing(volume, label):
     """Process validation data by only adding a channel."""
     volume = tf.expand_dims(volume, axis=3)
     return volume, label
+
+skf = StratifiedKFold(n_splits=10, random_state=7, shuffle=True)
+
+for train_idx, val_idx in skf.split(x,y):
+    print("train: ", train_idx, " val: ", val_idx)
+    x_train = x[train_idx]
+    y_train = y[train_idx]
+    x_val = x[val_idx]
+    y_val = y[val_idx]
+    print(y_val)
 
 # Define data loaders.
 train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
@@ -131,10 +126,9 @@ model.summary()
 
 METRICS = [
       keras.metrics.TruePositives(name='tp'),
-      keras.metrics.binary_crossentropy(name='binary_crossentropy'),
       keras.metrics.FalsePositives(name='fp'),
       keras.metrics.TrueNegatives(name='tn'),
-      keras.metrics.FalseNegatives(name='fn'), 
+      keras.metrics.FalseNegatives(name='fn'),
       keras.metrics.BinaryAccuracy(name='accuracy'),
       keras.metrics.Precision(name='precision'),
       keras.metrics.Recall(name='recall'),
@@ -150,13 +144,13 @@ lr_schedule = keras.optimizers.schedules.ExponentialDecay(
 model.compile(
     loss="binary_crossentropy",
     optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-    metrics=[METRICS]
+    metrics=[METRICS, "binary_crossentropy"]
 )
 
 # Define callbacks.
 checkpoint_cb = keras.callbacks.ModelCheckpoint("3d_image_classification.h5", save_best_only=True)
 
-early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_acc", patience=5)
+early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_loss",mode="min", patience=5)
 
 # Train the model, doing validation at the end of each epoch
 epochs = 100
@@ -180,7 +174,7 @@ print("saved model to disk")
 fig, ax = plt.subplots(1, 2, figsize=(20, 3))
 ax = ax.ravel()
 
-for i, metric in enumerate(["acc", "loss"]):
+for i, metric in enumerate(["auc", "loss"]):
     ax[i].plot(model.history.history[metric])
     ax[i].plot(model.history.history["val_" + metric])
     ax[i].set_title("Model {}".format(metric))
