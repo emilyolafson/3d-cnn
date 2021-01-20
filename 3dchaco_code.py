@@ -67,10 +67,6 @@ def get_model(width=64, height=64, depth=64):
     x = layers.MaxPool3D(pool_size=2)(x)
     x = layers.BatchNormalization()(x)
 
-    x = layers.Conv3D(filters=64, kernel_size=3, activation="relu")(x)
-    x = layers.MaxPool3D(pool_size=2)(x)
-    x = layers.BatchNormalization()(x)
-
     x = layers.Conv3D(filters=128, kernel_size=3, activation="relu")(x)
     x = layers.MaxPool3D(pool_size=2)(x)
     x = layers.BatchNormalization()(x)
@@ -80,7 +76,7 @@ def get_model(width=64, height=64, depth=64):
     x = layers.BatchNormalization()(x)
 
     x = layers.GlobalAveragePooling3D()(x)
-    x = layers.Dense(units=512, activation="relu")(x)
+    x = layers.Dense(units=256, activation="relu")(x)
     x = layers.Dropout(0.3)(x)
 
     outputs = layers.Dense(units=1, activation="sigmoid")(x)
