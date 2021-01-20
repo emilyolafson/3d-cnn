@@ -89,7 +89,6 @@ def get_model(width=64, height=64, depth=64):
     model = keras.Model(inputs, outputs, name="3dcnn")
     return model
 
-    
 METRICS = [
     keras.metrics.BinaryAccuracy(name='accuracy'),
     keras.metrics.AUC(name='auc'),
@@ -100,11 +99,13 @@ skf = StratifiedKFold(n_splits=10, random_state=7, shuffle=True)
 skf_count = 0
 for train_idx, val_idx in skf.split(x,y):
     print("STARTING MODEL TRAINING FOR SKFOLD SPLIT #: " + str(skf_count + 1))
-    
+
     x_train = x[train_idx]
     y_train = y[train_idx]
     x_val = x[val_idx]
     y_val = y[val_idx]
+    print(sum(y_train))
+    print(len(y_train))
     print(y_val)
 
     # Define data loaders.
