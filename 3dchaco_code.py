@@ -24,6 +24,7 @@ x = pickle.load(pickle_in)
 pickle_in = open(data_dir + "/all_ydata.pkl", "r+b")
 y = pickle.load(pickle_in)
 
+results_dir=str(cwd) + "/results"
 
 @tf.function
 def rotate(volume):
@@ -98,7 +99,8 @@ skf = StratifiedKFold(n_splits=10, random_state=7, shuffle=True)
 
 skf_count = 0
 for train_idx, val_idx in skf.split(x,y):
-    print("train: ", train_idx, " val: ", val_idx)
+    print("STARTING MODEL TRAINING FOR SKFOLD SPLIT #: " + str(skf_count + 1))
+    
     x_train = x[train_idx]
     y_train = y[train_idx]
     x_val = x[val_idx]
