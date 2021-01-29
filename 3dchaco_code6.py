@@ -19,13 +19,14 @@ print("Loading pkled data")
 
 cwd = os.getcwd()
 data_dir = str(cwd)+"/data"
+
 pickle_in = open(data_dir + "/all_xdata.pkl", "r+b")
 x = pickle.load(pickle_in)
 
 pickle_in = open(data_dir + "/all_ydata.pkl", "r+b")
 y = pickle.load(pickle_in)
 
-results_dir=str(cwd) + "/results/3/"
+results_dir=str(cwd) + "/results/6"
 
 @tf.function
 def rotate(volume):
@@ -78,7 +79,7 @@ def get_model(width=64, height=64, depth=64):
 
     x = layers.GlobalAveragePooling3D()(x)
     x = layers.Dense(units=40, activation="relu")(x)
-    x = layers.Dropout(0.6)(x)
+    x = layers.Dropout(0.3)(x)
 
     outputs = layers.Dense(units=1, activation="sigmoid")(x)
 
@@ -91,6 +92,11 @@ METRICS = [
     keras.metrics.BinaryAccuracy(name='accuracy'),
     keras.metrics.AUC(name='auc'),
 ]
+
+
+print("MRI scans of individuals with disabled EDSS:  " + str(len(x)))
+
+
 
 skf=StratifiedKFold(n_splits=10,random_state=7,shuffle=True)
 skf_count = 0
@@ -111,7 +117,7 @@ for train_idx, val_idx in skf.split(x,y):
     train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     validation_loader = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 
-    batch_size = 2
+    batch_size = 10
     # Augment the on the fly during training.
     train_dataset = (
         train_loader.shuffle(len(x_train))
@@ -159,9 +165,8 @@ for train_idx, val_idx in skf.split(x,y):
         callbacks=[checkpoint_cb, early_stopping_cb]
     )
 
-    results_dir = str(cwd) + "/results"
     model_json=model.to_json()
-    with open(results_dir + "model_" + str(skf_count)+".json", "w") as json_file:
+    with open(results_dir + "/model_" + str(skf_count)+".json", "w") as json_file:
         json_file.write(model_json)
 
     model.save_weights(results_dir + "/model_" + str(skf_count) + ".h5")
