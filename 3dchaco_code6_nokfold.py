@@ -101,100 +101,89 @@ print("MRI scans of individuals with disabled EDSS:  " + str(len(x)))
 skf=StratifiedKFold(n_splits=10,random_state=7,shuffle=True)
 skf_count = 0
 
-    print("STARTING MODEL TRAINING FOR SKFOLD SPLIT #: " + str(skf_count + 1))
+X_train, X_val, y_train, y_val = train_test_split(x, y, test_size=0.30, random_state=7)
 
+# Define data loaders.
+train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+validation_loader = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 
-    x_train = x[train_idx]
-    y_train = y[train_idx]
-    x_val = x[val_idx]
-    y_val = y[val_idx]
-    print(sum(y_train))
-    print(len(y_train))
-    print(y_val)
+batch_size = 10
+# Augment the on the fly during training.
+train_dataset = (
+    train_loader.shuffle(len(x_train))
+    .map(train_preprocessing)
+    .batch(batch_size)
+    .prefetch(2)
+)
+# Only rescale.
+validation_dataset = (
+    validation_loader.shuffle(len(x_val))
+    .map(validation_preprocessing)
+    .batch(batch_size)
+    .prefetch(2)
+)
 
+# Build model.
+model = get_model(width=64, height=64, depth=64)
+model.summary()
 
-    # Define data loaders.
-    train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    validation_loader = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+# Compile model.
+initial_learning_rate = 0.001
+lr_schedule = keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
+)
 
-    batch_size = 10
-    # Augment the on the fly during training.
-    train_dataset = (
-        train_loader.shuffle(len(x_train))
-        .map(train_preprocessing)
-        .batch(batch_size)
-        .prefetch(2)
+model.compile(
+    loss="binary_crossentropy",
+    optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
+    metrics=[METRICS, "binary_crossentropy"]
+)
+
+# Define callbacks.
+checkpoint_cb = keras.callbacks.ModelCheckpoint(results_dir + "/model_" + str(skf_count) + ".h5", save_best_only=True)
+
+early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_auc", patience=10)
+
+# Train the model, doing validation at the end of each epoch
+epochs = 100
+model.fit(
+    train_dataset,
+    validation_data=validation_dataset,
+    epochs=epochs,
+    shuffle=True,
+    verbose=1,
+    callbacks=[checkpoint_cb, early_stopping_cb]
+)
+
+model_json=model.to_json()
+with open(results_dir + "/model_noskf.json", "w") as json_file:
+    json_file.write(model_json)
+
+model.save_weights(results_dir + "/model_noskf.h5")
+print("saved model to disk")
+
+fig, ax = plt.subplots(1, 2, figsize=(20, 3))
+ax = ax.ravel()
+
+for i, metric in enumerate(["auc", "loss"]):
+    ax[i].plot(model.history.history[metric])
+    ax[i].plot(model.history.history["val_" + metric])
+    ax[i].set_title("Model {}".format(metric))
+    ax[i].set_xlabel("epochs")
+    ax[i].set_ylabel(metric)
+    ax[i].legend(["train", "val"])
+
+plt.savefig(results_dir + "/auc_loss_noskf.png")
+
+# Load best weights.
+model.load_weights(results_dir + "/model_noskf.h5")
+prediction = model.predict(np.expand_dims(x_val[0], axis=0))[0]
+scores = [1 - prediction[0], prediction[0]]
+
+class_names = ["normal", "disabled"]
+for score, name in zip(scores, class_names):
+    print(
+        "This model is %.2f percent confident that MRI scan is %s"
+        % ((100 * score), name)
     )
-    # Only rescale.
-    validation_dataset = (
-        validation_loader.shuffle(len(x_val))
-        .map(validation_preprocessing)
-        .batch(batch_size)
-        .prefetch(2)
-    )
-
-    # Build model.
-    model = get_model(width=64, height=64, depth=64)
-    model.summary()
-
-    # Compile model.
-    initial_learning_rate = 0.001
-    lr_schedule = keras.optimizers.schedules.ExponentialDecay(
-        initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
-    )
-
-    model.compile(
-        loss="binary_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-        metrics=[METRICS, "binary_crossentropy"]
-    )
-
-    # Define callbacks.
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(results_dir + "/model_" + str(skf_count) + ".h5", save_best_only=True)
-
-    early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_auc", patience=15)
-
-    # Train the model, doing validation at the end of each epoch
-    epochs = 100
-    model.fit(
-        train_dataset,
-        validation_data=validation_dataset,
-        epochs=epochs,
-        shuffle=True,
-        verbose=1,
-        callbacks=[checkpoint_cb, early_stopping_cb]
-    )
-
-    model_json=model.to_json()
-    with open(results_dir + "/model_" + str(skf_count)+".json", "w") as json_file:
-        json_file.write(model_json)
-
-    model.save_weights(results_dir + "/model_" + str(skf_count) + ".h5")
-    print("saved model to disk")
-
-    fig, ax = plt.subplots(1, 2, figsize=(20, 3))
-    ax = ax.ravel()
-
-    for i, metric in enumerate(["auc", "loss"]):
-        ax[i].plot(model.history.history[metric])
-        ax[i].plot(model.history.history["val_" + metric])
-        ax[i].set_title("Model {}".format(metric))
-        ax[i].set_xlabel("epochs")
-        ax[i].set_ylabel(metric)
-        ax[i].legend(["train", "val"])
-
-    plt.savefig(results_dir + "/auc_loss_" + str(skf_count) +".png")
-
-    # Load best weights.
-    model.load_weights(results_dir + "/model_" + str(skf_count) + ".h5")
-    prediction = model.predict(np.expand_dims(x_val[0], axis=0))[0]
-    scores = [1 - prediction[0], prediction[0]]
-
-    class_names = ["normal", "disabled"]
-    for score, name in zip(scores, class_names):
-        print(
-            "This model is %.2f percent confident that MRI scan is %s"
-            % ((100 * score), name)
-        )
-    skf_count = skf_count + 1
 
