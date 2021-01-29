@@ -13,6 +13,8 @@ import nibabel as nib
 from sklearn.model_selection import StratifiedKFold
 from scipy import ndimage
 import random
+from sklearn.utils import class_weight
+from keras import backend as K
 
 print("Loading pkled data")
 
@@ -85,16 +87,17 @@ def get_model(width=64, height=64, depth=64):
     model = keras.Model(inputs, outputs, name="3dcnn")
     return model
 
+
 METRICS = [
     keras.metrics.BinaryAccuracy(name='accuracy'),
     keras.metrics.AUC(name='auc'),
 ]
 
-skf = StratifiedKFold(n_splits=10, random_state=7, shuffle=True)
-
+skf=StratifiedKFold(n_splits=10,random_state=7,shuffle=True)
 skf_count = 0
 for train_idx, val_idx in skf.split(x,y):
     print("STARTING MODEL TRAINING FOR SKFOLD SPLIT #: " + str(skf_count + 1))
+
 
     x_train = x[train_idx]
     y_train = y[train_idx]
@@ -104,11 +107,12 @@ for train_idx, val_idx in skf.split(x,y):
     print(len(y_train))
     print(y_val)
 
+
     # Define data loaders.
     train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     validation_loader = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 
-    batch_size = 2
+    batch_size = 32
     # Augment the on the fly during training.
     train_dataset = (
         train_loader.shuffle(len(x_train))
@@ -129,7 +133,7 @@ for train_idx, val_idx in skf.split(x,y):
     model.summary()
 
     # Compile model.
-    initial_learning_rate = 0.0001
+    initial_learning_rate = 0.001
     lr_schedule = keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
     )
@@ -153,7 +157,7 @@ for train_idx, val_idx in skf.split(x,y):
         epochs=epochs,
         shuffle=True,
         verbose=1,
-        callbacks=[checkpoint_cb, early_stopping_cb],
+        callbacks=[checkpoint_cb, early_stopping_cb]
     )
 
     results_dir = str(cwd) + "/results"
