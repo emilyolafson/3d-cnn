@@ -9,7 +9,8 @@ from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 from keras.models import model_from_json
 import nibabel as nib
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
+
 from scipy import ndimage
 import random
 from sklearn.utils import class_weight
