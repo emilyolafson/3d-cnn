@@ -80,44 +80,9 @@ not_disabled_labels = np.array([0 for _ in range(len(not_disabled_scans))])
 
 # Split data in the ratio 70-15-15 for training, validation, and test respectively
 
-x_train = np.concatenate((disabled_scans[21:], not_disabled_scans[89:]), axis=0)
-y_train = np.concatenate((disabled_labels[21:], not_disabled_labels[89:]), axis=0)
-
-x_val = np.concatenate((disabled_scans[10:21], not_disabled_scans[44:89]), axis=0)
-y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axis=0)
-
-x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
-y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
-
 all_x=np.concatenate((disabled_scans, not_disabled_scans), axis=0)
 all_y=np.concatenate((disabled_labels, not_disabled_labels), axis=0)
 
-
-
-
-pickle_out= open(data_dir + "/xtest_data.pkl", "wb")
-pickle.dump(x_test, pickle_out)
-pickle_out.close()
-
-pickle_out = open(data_dir + "/ytest_data.pkl", "wb")
-pickle.dump(y_test, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/xtrain_data.pkl", "wb")
-pickle.dump(x_train, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/ytrain_data.pkl", "wb")
-pickle.dump(y_train, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/xval_data.pkl", "wb")
-pickle.dump(x_val, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/yval_data.pkl", "wb")
-pickle.dump(y_val, pickle_out)
-pickle_out.close()
 
 pickle_out= open(data_dir + "/all_xdata.pkl", "wb")
 pickle.dump(all_x, pickle_out)
