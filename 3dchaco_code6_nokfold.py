@@ -101,7 +101,7 @@ print("MRI scans of individuals with disabled EDSS:  " + str(len(x)))
 skf=StratifiedKFold(n_splits=10,random_state=7,shuffle=True)
 skf_count = 0
 
-X_train, X_val, y_train, y_val = train_test_split(x, y, test_size=0.30, random_state=7)
+x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.30, random_state=7)
 
 # Define data loaders.
 train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
