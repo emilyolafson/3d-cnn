@@ -20,13 +20,16 @@ def read_nifti_file(filepath):
 def resize_volume(img):
     """Resize across z-axis"""
     # Set the desired depth
-    desired_depth = 64
-    desired_width = 64 # old = 128.
-    desired_height = 64
+    desired_depth = 91
+    desired_width = 91 # old = 128.
+    desired_height = 109
     # Get current depth
     current_depth = img.shape[-1]
+    print('current_depth' + str(current_depth))
     current_width = img.shape[0]
+    print('current width' + str(current_width))
     current_height = img.shape[1]
+    print('current_height' + str(current_height))
     # Compute depth factor
     depth = current_depth / desired_depth
     width = current_width / desired_width
@@ -79,51 +82,29 @@ disabled_labels = np.array([1 for _ in range(len(disabled_scans))])
 not_disabled_labels = np.array([0 for _ in range(len(not_disabled_scans))])
 
 # Split data in the ratio 70-15-15 for training, validation, and test respectively
-
-x_train = np.concatenate((disabled_scans[21:], not_disabled_scans[89:]), axis=0)
-y_train = np.concatenate((disabled_labels[21:], not_disabled_labels[89:]), axis=0)
-
-x_val = np.concatenate((disabled_scans[10:21], not_disabled_scans[44:89]), axis=0)
-y_val = np.concatenate((disabled_labels[10:21], not_disabled_labels[44:89]), axis=0)
+all_x = np.concatenate((disabled_scans[10:], not_disabled_scans[44:]), axis=0)
+all_y = np.concatenate((disabled_labels[10:], not_disabled_labels[44:]), axis=0)
 
 x_test = np.concatenate((disabled_scans[:10], not_disabled_scans[:44]), axis=0)
 y_test = np.concatenate((disabled_labels[:10], not_disabled_labels[:44]), axis=0)
 
-all_x=np.concatenate((disabled_scans, not_disabled_scans), axis=0)
-all_y=np.concatenate((disabled_labels, not_disabled_labels), axis=0)
 
 
 
 
-pickle_out= open(data_dir + "/xtest_data.pkl", "wb")
+pickle_out= open(data_dir + "/xtest_data_trusize.pkl", "wb")
 pickle.dump(x_test, pickle_out)
 pickle_out.close()
 
-pickle_out = open(data_dir + "/ytest_data.pkl", "wb")
+pickle_out = open(data_dir + "/ytest_data_trusize.pkl", "wb")
 pickle.dump(y_test, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/xtrain_data.pkl", "wb")
-pickle.dump(x_train, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/ytrain_data.pkl", "wb")
-pickle.dump(y_train, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/xval_data.pkl", "wb")
-pickle.dump(x_val, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/yval_data.pkl", "wb")
-pickle.dump(y_val, pickle_out)
-pickle_out.close()
-
-pickle_out= open(data_dir + "/all_xdata.pkl", "wb")
+pickle_out= open(data_dir + "/all_xdata_trusize.pkl", "wb")
 pickle.dump(all_x, pickle_out)
 pickle_out.close()
 
-pickle_out= open(data_dir + "/all_ydata.pkl", "wb")
+pickle_out= open(data_dir + "/all_ydata_trusize.pkl", "wb")
 pickle.dump(all_y, pickle_out)
 pickle_out.close()
 
