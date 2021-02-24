@@ -1,6 +1,8 @@
 # Read nii.gz files and save to picked format.
 
 import os
+import numpy as np
+import pandas as pd
 import nibabel as nib
 
 data_dir =  #/path/to/nii/scans
