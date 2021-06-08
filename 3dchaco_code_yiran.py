@@ -29,31 +29,11 @@ y = pickle.load(pickle_in)
 results_dir=str(cwd) + "/results/6"
 
 @tf.function
-def rotate(volume):
-    """Rotate the volume by a few degrees"""
-
-    def scipy_rotate(volume):
-        # define some rotation angles
-        angles = [-20, -10, -5, 5, 10, 20]
-        # pick angles at random
-        angle = random.choice(angles)
-        # rotate volume
-        volume = ndimage.rotate(volume, angle, reshape=False)
-        volume[volume < 0] = 0
-        volume[volume > 1] = 1
-        return volume
-
-    augmented_volume = tf.numpy_function(scipy_rotate, [volume], tf.float32)
-    return augmented_volume
-
-
 def train_preprocessing(volume, label):
     """Process training data by rotating and adding a channel."""
     # Rotate volume
-    volume = rotate(volume)
     volume = tf.expand_dims(volume, axis=3)
     return volume, label
-
 
 def validation_preprocessing(volume, label):
     """Process validation data by only adding a channel."""
@@ -81,7 +61,7 @@ def get_model(width=64, height=64, depth=64):
     x = layers.Dense(units=40, activation="relu")(x)
     x = layers.Dropout(0.3)(x)
 
-    outputs = layers.Dense(units=1, activation="sigmoid")(x)
+    outputs = layers.Dense(units=1, activation="linear")(x)
 
     # Define the model.
     model = keras.Model(inputs, outputs, name="3dcnn")
@@ -94,13 +74,13 @@ METRICS = [
 ]
 
 
-print("MRI scans of individuals with disabled EDSS:  " + str(len(x)))
-
-
-
 skf=StratifiedKFold(n_splits=10,random_state=7,shuffle=True)
 skf_count = 0
+# Define per-fold score containers
+acc_per_fold = []
+loss_per_fold = []
 
+for train_idx, val_idx in skf.split(x,y):
     print("STARTING MODEL TRAINING FOR SKFOLD SPLIT #: " + str(skf_count + 1))
 
 
@@ -108,17 +88,13 @@ skf_count = 0
     y_train = y[train_idx]
     x_val = x[val_idx]
     y_val = y[val_idx]
-    print(sum(y_train))
-    print(len(y_train))
-    print(y_val)
 
 
     # Define data loaders.
     train_loader = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     validation_loader = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 
-    batch_size = 10
-    # Augment the on the fly during training.
+    batch_size = 2
     train_dataset = (
         train_loader.shuffle(len(x_train))
         .map(train_preprocessing)
@@ -138,7 +114,7 @@ skf_count = 0
     model.summary()
 
     # Compile model.
-    initial_learning_rate = 0.001
+    initial_learning_rate = 0.0001
     lr_schedule = keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
     )
@@ -152,7 +128,7 @@ skf_count = 0
     # Define callbacks.
     checkpoint_cb = keras.callbacks.ModelCheckpoint(results_dir + "/model_" + str(skf_count) + ".h5", save_best_only=True)
 
-    early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_auc", patience=15)
+    early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_auc", patience=5)
 
     # Train the model, doing validation at the end of each epoch
     epochs = 100
@@ -163,7 +139,29 @@ skf_count = 0
         shuffle=True,
         verbose=1,
         callbacks=[checkpoint_cb, early_stopping_cb]
+        
     )
+    METRICS = [
+        keras.metrics.AUC(name='auc'),
+        keras.metrics.TruePositives(name='tp'),
+        keras.metrics.FalsePositives(name='fp'),
+        keras.metrics.TrueNegatives(name='tn'),
+        keras.metrics.FalseNegatives(name='fn'),
+        keras.metrics.BinaryAccuracy(name='accuracy'),
+        keras.metrics.Precision(name='precision'),
+        keras.metrics.Recall(name='recall')
+  
+    ]
+    model.compile(
+    loss="binary_crossentropy",
+    optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
+    metrics=[ "binary_crossentropy", METRICS]
+)
+    # Generate generalization metrics
+    scores = model.evaluate(x_val, y_val, verbose=0)
+    print(f'Score for fold {skf_count}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1]}')
+    auc_per_fold.append(scores[1])
+    loss_per_fold.append(scores[0])
 
     model_json=model.to_json()
     with open(results_dir + "/model_" + str(skf_count)+".json", "w") as json_file:
@@ -175,26 +173,19 @@ skf_count = 0
     fig, ax = plt.subplots(1, 2, figsize=(20, 3))
     ax = ax.ravel()
 
-    for i, metric in enumerate(["auc", "loss"]):
-        ax[i].plot(model.history.history[metric])
-        ax[i].plot(model.history.history["val_" + metric])
-        ax[i].set_title("Model {}".format(metric))
-        ax[i].set_xlabel("epochs")
-        ax[i].set_ylabel(metric)
-        ax[i].legend(["train", "val"])
-
     plt.savefig(results_dir + "/auc_loss_" + str(skf_count) +".png")
+    
+    skf_count = skf_count + 1 #increase fold number
 
-    # Load best weights.
-    model.load_weights(results_dir + "/model_" + str(skf_count) + ".h5")
-    prediction = model.predict(np.expand_dims(x_val[0], axis=0))[0]
-    scores = [1 - prediction[0], prediction[0]]
-
-    class_names = ["normal", "disabled"]
-    for score, name in zip(scores, class_names):
-        print(
-            "This model is %.2f percent confident that MRI scan is %s"
-            % ((100 * score), name)
-        )
-    skf_count = skf_count + 1
+# == Provide average scores ==
+print('------------------------------------------------------------------------')
+print('Score per fold')
+for i in range(0, len(auc_per_fold)):
+    print('------------------------------------------------------------------------')
+    print(f'> Fold {i+1} - Loss: {loss_per_fold[i]} - Accuracy: {auc_per_fold[i]}')
+    print('------------------------------------------------------------------------')
+    print('Average scores for all folds:')
+    print(f'> Accuracy: {np.mean(auc_per_fold)} (+- {np.std(auc_per_fold)})')
+    print(f'> Loss: {np.mean(loss_per_fold)}')
+    print('------------------------------------------------------------------------')
 
