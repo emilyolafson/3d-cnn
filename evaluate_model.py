@@ -1,4 +1,4 @@
-#! /usr/bin/env/python
+#! /home/emo4002/colossus_shared3/miniconda3/bin/python3
 
 import os
 import zipfile
@@ -22,26 +22,15 @@ x_test = pickle.load(pickle_in)
 pickle_in = open(data_dir + "/ytest_data.pkl", "r+b")
 y_test = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/xtrain_data.pkl", "r+b")
+pickle_in = open(data_dir + "/all_xdata.pkl", "r+b")
 x_train = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/ytrain_data.pkl", "r+b")
+pickle_in = open(data_dir + "/all_ydata.pkl", "r+b")
 y_train = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/xval_data.pkl", "r+b")
-x_val = pickle.load(pickle_in)
 
-pickle_in = open(data_dir + "/yval_data.pkl", "r+b")
-y_val = pickle.load(pickle_in)
-
-print(
-    "Number of samples in train, validation, and test are %d, %d, and %d."
-    % (x_train.shape[0], x_val.shape[0], x_test.shape[0])
-)
-
-
-resultsdir='/home/emo4002/colossus_shared3/MSpredict/3d-cnn/'
-json_file = open(resultsdir+'model.json', 'r')
+resultsdir='/home/emo4002/colossus_shared3/MSpredict/3d-cnn/results/4'
+json_file = open(resultsdir+'/model_1.json', 'r')
 loaded_model_json = json_file.read()
 
 json_file.close()
